@@ -55,19 +55,71 @@ int read_stdin(char *buffer);
 void fill_array(char *str, int size);
 
 /**
- * @brief escape \n from strings
- * 
- * @param str string
- * 
- * @param size taille de la string
- * 
- * @param escape char a escape
- * 
- * @param replace char qui remplace le char escape
- * 
- * @return la fonction n'a pas de valeur de retour
+ * @brief overwrite stdout
  **/
 
-void escape_string(char *str, int size, char escape, char replace);
+void str_overwrite_stdout();
+
+
+/**
+ * @brief remove \n char at the end of a new message
+ * 
+ * @param arr string
+ * 
+ * @param length size of string
+ * 
+ **/
+
+void str_trim_lf (char* arr, int length);
+
+/**
+ * @brief change printf colour to black
+ **/
+
+void stdout_black();
+
+/**
+ * @brief change printf colour to red
+ **/
+
+void stdout_red();
+
+/**
+ * @brief change printf colour to green
+ **/
+
+void stdout_green();
+
+/**
+ * @brief change printf colour to yellow
+ **/
+
+void stdout_yellow();
+
+/**
+ * @brief change printf colour to blue
+ **/
+
+void stdout_blue();
+
+/**
+ * @brief change printf colour to purple
+ **/
+
+void stdout_purple();
+
+/**
+ * @brief change printf colour to cyan
+ **/
+
+void stdout_cyan();
+
+/**
+ * @brief change printf colour to white
+ **/
+
+void stdout_white();
+
+
 
 #endif

@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <signal.h>
 
+#include "../libs/utils.h"
+
 #define MAX_CLIENTS 100
 #define BUFFER_SZ 2048
 
@@ -27,21 +29,6 @@ typedef struct {
 client_t *clients[MAX_CLIENTS];
 
 pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-void str_overwrite_stdout() {
-    printf("\r%s", "> ");
-    fflush(stdout);
-}
-
-void str_trim_lf (char* arr, int length) {
-  int i;
-  for (i = 0; i < length; i++) { // trim \n
-    if (arr[i] == '\n') {
-      arr[i] = '\0';
-      break;
-    }
-  }
-}
 
 void print_client_addr(struct sockaddr_in addr){
     printf("%d.%d.%d.%d",
@@ -114,8 +101,9 @@ void *handle_client(void *arg){
 		leave_flag = 1;
 	} else{
 		strcpy(cli->name, name);
-		sprintf(buff_out, "%s has joined\n", cli->name);
+		sprintf(buff_out, "\033[0;32m+ %s has joined\n", cli->name);
 		printf("%s", buff_out);
+		stdout_white();
 		send_message(buff_out, cli->uid);
 	}
 
@@ -132,11 +120,14 @@ void *handle_client(void *arg){
 				send_message(buff_out, cli->uid);
 
 				str_trim_lf(buff_out, strlen(buff_out));
+				stdout_yellow();
 				printf("%s -> %s\n", buff_out, cli->name);
+				stdout_white();
 			}
 		} else if (receive == 0 || strcmp(buff_out, "exit") == 0){
-			sprintf(buff_out, "%s has left\n", cli->name);
+			sprintf(buff_out, "\033[0;31m- %s has left\n", cli->name);
 			printf("%s", buff_out);
+			stdout_white();
 			send_message(buff_out, cli->uid);
 			leave_flag = 1;
 		} else {
@@ -147,7 +138,6 @@ void *handle_client(void *arg){
 		bzero(buff_out, BUFFER_SZ);
 	}
 
-  /* Delete client from queue and yield thread */
 	close(cli->sockfd);
     queue_remove(cli->uid);
     free(cli);

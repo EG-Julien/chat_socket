@@ -51,6 +51,9 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-#Bin exclude
+# Bin exclude
 client/bin/*
 server/bin/*
+
+# VS code exclude
+.vscode/*
