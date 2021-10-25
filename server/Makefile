@@ -24,6 +24,7 @@ rm 	        = rm -f
 all: $(BINDIR)/$(TARGET)
 
 $(BINDIR)/$(TARGET): $(OBJECTS) $(OBJECTS_LIB)
+	@mkdir -p $(BINDIR)
 	@$(LINKER) $@ $(OBJECTS) $(OBJECTS_LIB) $(LFLAGS)
 
 $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
