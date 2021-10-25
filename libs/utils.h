@@ -120,6 +120,15 @@ void stdout_cyan();
 
 void stdout_white();
 
+/**
+ * @brief start server as a daemon
+ * 
+ * @param port port that server should listen to
+ * 
+ * @return pid_t of server
+ **/
+
+pid_t skeleton_daemon(char* port);
 
 
 #endif

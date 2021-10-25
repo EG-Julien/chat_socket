@@ -57,3 +57,8 @@ server/bin/*
 
 # VS code exclude
 .vscode/*
+
+# logs file
+
+client/log.txt
+client/log_errors.txt

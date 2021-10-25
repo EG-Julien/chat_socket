@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <unistd.h>
+#include <syslog.h>
 
 #include "utils.h"
 
@@ -92,4 +93,40 @@ void str_trim_lf (char* arr, int length) {
             break;
         }
     }
+}
+
+pid_t skeleton_daemon(char* port) {
+    pid_t pid;
+
+    pid = fork();
+
+    if (pid == 0) {
+
+        int fd_null = open("/dev/null", O_RDONLY);
+        if (fd_null == -1)
+            return -1;
+        
+        int fd_log = open("./log.txt", O_CREAT | O_APPEND | O_WRONLY, 0777);
+        if (fd_log == -1)
+            return -1;
+        
+        int fd_err = open("./log_errors.txt", O_CREAT | O_APPEND | O_WRONLY, 0777);
+        if (fd_err == -1)
+            return -1;
+
+        dup2(fd_null, STDIN_FILENO);
+        dup2(fd_log,  STDOUT_FILENO);
+        dup2(fd_err,  STDERR_FILENO);
+
+        int err = execl("../server/bin/server_app", "server_app", port, (char*)NULL);
+
+        return getpid();
+
+        if (err != 0)
+            return -1;
+    } else {
+        return pid;
+    }
+
+    return -1;
 }

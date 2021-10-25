@@ -177,15 +177,15 @@ int main(int argc, char **argv){
 	}
 
 	/* Bind */
-  if(bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-    perror("ERROR: Socket binding failed");
-    return EXIT_FAILURE;
-  }
+	if(bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+		perror("ERROR: Socket binding failed");
+		return EXIT_FAILURE;
+	}
 
-  /* Listen */
-  if (listen(listenfd, 10) < 0) {
-    perror("ERROR: Socket listening failed");
-    return EXIT_FAILURE;
+	/* Listen */
+	if (listen(listenfd, 10) < 0) {
+		perror("ERROR: Socket listening failed");
+		return EXIT_FAILURE;
 	}
 
 	printf("=== WELCOME TO THE CHATROOM ===\n");

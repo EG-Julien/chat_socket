@@ -9,6 +9,8 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <time.h>
+#include <assert.h>
+#include <errno.h>
 
 #include "../libs/utils.h"
 
@@ -18,6 +20,7 @@
 volatile sig_atomic_t flag = 0;
 int sockfd = 0;
 char name[32];
+pid_t server_pid = -1;
 
 void catch_ctrl_c_and_exit(int sig) {
     flag = 1;
@@ -107,21 +110,50 @@ int main(int argc, char **argv){
 		return EXIT_FAILURE;
 	}
 
-	struct sockaddr_in server_addr;
+    int try = 1;
 
-	/* Socket settings */
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr(ip);
-    server_addr.sin_port = htons(port);
+    do {
+        struct sockaddr_in server_addr;
 
+        /* Socket settings */
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        server_addr.sin_family = AF_INET;
+        server_addr.sin_addr.s_addr = inet_addr(ip);
+        server_addr.sin_port = htons(port);
+        // Connect to Server
+        int err = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
 
-    // Connect to Server
-    int err = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
+        if (err == -1) {
+            stdout_red();
+            printf("ERROR: can't connect to the server, code : %d ... Trying to launch it ! Try %d/5 \n", errno, try);
+            close(sockfd);
+        } else {
+            break;
+        }
 
-    if (err == -1) {
+        server_pid = skeleton_daemon(argv[1]);
+
+        if (server_pid == -1) {
+            stdout_red();
+            printf("ERROR: unable to start server ... retrying ... Try %d/5 \n", try);
+        } else {
+            stdout_green();
+            printf("SUCCESS: server started successfully with pid %d\n", server_pid);
+        }
+
+        sleep(1);
+
+        if (try >= 5)
+            break;
+
+        try++;
+    } while(1);
+
+    stdout_white();
+
+    if (try > 5) {
         stdout_red();
-        printf("ERROR: connect\n");
+        printf("ERROR: Unable to start/connect server\n");
         return EXIT_FAILURE;
     }
 
@@ -148,11 +180,24 @@ int main(int argc, char **argv){
 
     while (1){
         if(flag){
-            stdout_red();
-            printf("\nBye\n");
+            if (server_pid == -1) {
+                break;
+            } else {
+                if (kill(server_pid, SIGINT) == -1) {
+                    stdout_red();
+                    printf("ERROR: unable to kill server with pid : %d ...\n", server_pid);
+                    break;
+                } else {
+                    stdout_green();
+                    printf("SUCCESS: server stoped.\n");
+                }
+            }
             break;
         }
     }
+
+    stdout_red();
+    printf("\nBye\n");
 
 	close(sockfd);
 
