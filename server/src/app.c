@@ -86,6 +86,36 @@ void send_message(char *s, int uid){
 	pthread_mutex_unlock(&clients_mutex);
 }
 
+/* Send private message to one client */
+void send_private_message(char *s, char *name, int sockfd) {
+	pthread_mutex_lock(&clients_mutex);
+
+	int found = 0;
+
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if (clients[i]) {
+			if (strcmp(clients[i]->name, name) == 0) {
+				if (write(clients[i]->sockfd, s, strlen(s)) < 0) {
+					perror("ERROR: write to descriptor failed");
+					break;
+				}
+				found = 1;
+			}
+		}
+	}
+
+	if (found == 0) {
+		char buffer[64];
+		printf("user %s not found !\n", name);
+		sprintf(buffer, "L'utilisateur demandé n'existe pas / n'est pas connecté ...\n");
+		if (write(sockfd, buffer, strlen(buffer)) < 0) {
+			perror("ERROR: write to descriptor failed");
+		}
+	}
+
+	pthread_mutex_unlock(&clients_mutex);
+}
+
 /* Handle all communication with the client */
 void *handle_client(void *arg){
 	char buff_out[BUFFER_SZ];
@@ -109,6 +139,9 @@ void *handle_client(void *arg){
 
 	bzero(buff_out, BUFFER_SZ);
 
+	char username[30] = { 0 };
+	char private_msg[2048] = { 0 };
+
 	while(1){
 		if (leave_flag) {
 			break;
@@ -117,12 +150,21 @@ void *handle_client(void *arg){
 		int receive = recv(cli->sockfd, buff_out, BUFFER_SZ, 0);
 		if (receive > 0){
 			if(strlen(buff_out) > 0){
-				send_message(buff_out, cli->uid);
+				if ((strcmp(buff_out, "/stop\n") == 0) || (strcmp(buff_out, "/stop") == 0)) {
+					send_message("Arret du serveur ! - Veuillez taper /exit pour quitter.\n", -1);
+					kill(getpid(), SIGINT);
+				} else if (sscanf(buff_out, "private_msg=%s %[^\n]", username, private_msg) > 0) {
+					printf("username:%s, message:%s\n", username, private_msg);
+					sprintf(buff_out, "[MSG] - %s vous a envoye un message privé : %s\n", cli->name, private_msg);
+					send_private_message(buff_out, username, cli->sockfd);
+				} else {
+					send_message(buff_out, cli->uid);
 
-				str_trim_lf(buff_out, strlen(buff_out));
-				stdout_yellow();
-				printf("%s -> %s\n", buff_out, cli->name);
-				stdout_white();
+					str_trim_lf(buff_out, strlen(buff_out));
+					stdout_yellow();
+					printf("%s -> %s\n", buff_out, cli->name);
+					stdout_white();
+				}
 			}
 		} else if (receive == 0 || strcmp(buff_out, "exit") == 0){
 			sprintf(buff_out, "\033[0;31m- %s has left\n", cli->name);

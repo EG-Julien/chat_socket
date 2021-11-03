@@ -22,6 +22,9 @@ int sockfd = 0;
 char name[32];
 pid_t server_pid = -1;
 
+int flag_reply = 0;
+char reply_username[30];
+
 void catch_ctrl_c_and_exit(int sig) {
     flag = 1;
 }
@@ -29,40 +32,75 @@ void catch_ctrl_c_and_exit(int sig) {
 void send_msg_handler() {
     char message[LENGTH] = {};
 	char buffer[LENGTH + 32] = {};
+    char to[30] = { 0 };
+    char msg[LENGTH] = { 0 };
 
     unsigned int is_command = 0;
 
     while(1) {
   	    str_overwrite_stdout();
         fgets(message, LENGTH, stdin);
-        str_trim_lf(message, LENGTH);
 
-        if (strcmp(message, "/help") == 0) {
+        if (sscanf(message, "/msg %s %[^\n]", to, msg) > 0) {
+            sprintf(buffer, "private_msg=%s %s", to, msg);
+            stdout_purple();
+            printf("Message privé à %s : %s\n", to, msg);
+            send(sockfd, buffer, strlen(buffer), 0);
             is_command = 1;
+        }
 
-            stdout_white();
-            printf("=== CHAT SOCKET HELP MENU ===\n");
-            printf(" - /exit -> leave the chat system\n - /help -> displays this help menu\n");
-        } 
-
-        if (strcmp(message, "/exit") == 0) {
-            break;
-        } else {
-            if (!is_command) {
-                sprintf(buffer, "%s: %s\n", name, message);
+        if (sscanf(message, "/r %[^\n]", msg) > 0) {
+            if (!flag_reply) {
+                stdout_red();
+                printf("Vous n'avez reçu aucun message pour le moment ...\n");
+            } else {
+                sprintf(buffer, "private_msg=%s %s", reply_username, msg);
                 send(sockfd, buffer, strlen(buffer), 0);
+            }
+            is_command = 1;
+        }
+
+        if (message[0] != '\n') {
+            str_trim_lf(message, LENGTH);
+
+            if (strcmp(message, "/help") == 0) {
+                is_command = 1;
+
+                stdout_white();
+                printf("=== CHAT SOCKET HELP MENU ===\n");
+                printf(" - /exit -> permet de fermer le client.\n - /help -> permet d'afficher cette page d'aide.\n");
+                printf(" - /stop -> permet d'envoyer un signal pour stopper le serveur.\n - /r -> permet de répondre à un message privé.\n");
+            } 
+
+            if (strcmp(message, "/exit") == 0) {
+                server_pid = -1;
+                break;
+            } else if (strcmp(message, "/stop") == 0) {
+                sprintf(buffer, "/stop");
+                send(sockfd, buffer, strlen(buffer), 0);
+                break;
+            } else {
+                if (!is_command) {
+                    sprintf(buffer, "%s: %s\n", name, message);
+                    if (send(sockfd, buffer, strlen(buffer), 0) == -1)
+                        break;
+                }
             }
         }
 
         is_command = 0;
 		bzero(message, LENGTH);
         bzero(buffer, LENGTH + 32);
+        bzero(to, 30);
+        bzero(buffer, LENGTH);
+        bzero(msg, LENGTH);
     }
     catch_ctrl_c_and_exit(2);
 }
 
 void recv_msg_handler() {
 	char message[LENGTH] = {};
+    char buffer[LENGTH]  = {}; 
     while (1) {
         int receive = recv(sockfd, message, LENGTH, 0);
         if (receive > 0) {
@@ -75,6 +113,9 @@ void recv_msg_handler() {
 
 
             stdout_yellow();
+            if (sscanf(message, "[MSG] - %s vous a envoye un message privé : %[^\n]", reply_username, buffer) > 0) {
+                flag_reply = 1;
+            }
             printf("[%d:%d:%d] %s", timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec, message);
             str_overwrite_stdout();
         } else if (receive == 0) {
