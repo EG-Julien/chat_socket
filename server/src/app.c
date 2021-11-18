@@ -162,7 +162,8 @@ void *handle_client(void *arg){
 
 					str_trim_lf(buff_out, strlen(buff_out));
 					stdout_yellow();
-					printf("%s -> %s\n", buff_out, cli->name);
+					print_client_addr(cli->address);
+					printf(" -> %s -> %s\n", buff_out, cli->name);
 					stdout_white();
 				}
 			}
@@ -195,7 +196,7 @@ int main(int argc, char **argv){
 		return EXIT_FAILURE;
 	}
 
-	char *ip = "127.0.0.1";
+	char *ip = "0.0.0.0";
 	int port = atoi(argv[1]);
 	int option = 1;
 	int listenfd = 0, connfd = 0;

@@ -7,6 +7,7 @@ Yet an another chat socket system
  - ~~Ajouter les messages privés~~
  - Aojuter la commande /nick pour ajouter un nick name
  - (faire un système de channel ?)
+ - Pouvoir préciser une addresse pour le serveur.
 
 
 ## Commandes
